@@ -11,6 +11,13 @@ class FoodSearch extends React.Component {
     searchValue: '',
   };
 
+  componentDidMount(){
+    Client.search('', (foods) => {
+      this.setState({
+        foods: foods.slice(0, MATCHING_ITEM_LIMIT),
+      });
+    })
+  }
   handleSearchChange = (e) => {
     const value = e.target.value;
 
