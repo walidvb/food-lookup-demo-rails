@@ -4,11 +4,12 @@ self.addEventListener('install', function(event){
   console.log('WORKER: install event in progress.');
   event.waitUntil(
     caches
-      .open(version + 'static')
+      .open(version + 'fundamentals')
       .then(function(cache){
         return cache.addAll([
           '/',
-          '/static/js/bundle.js'
+          '/static/js/bundle.js',
+          '/api/food'
         ])
       })
       .then(function(){
@@ -32,6 +33,8 @@ self.addEventListener('fetch', function(event){
 
         return cached || networked;
         function fetchedFromNetwork(response){
+          // don't cache other resource than the ones in static
+          return;
           var cacheCopy = response.clone();
           console.log('WORKER: fetch response', event.request.url);
 
@@ -46,7 +49,7 @@ self.addEventListener('fetch', function(event){
         }
 
         function unableToResolve(){
-          var emptyRes = JSON.stringify([{ description: "No result", kcal: 717, fat_g: 75.43, carbohydrate_g: 0.06, protein_g: 0.85 }])
+          var emptyRes = JSON.stringify([{ description: "No cached response for this", kcal: 717, fat_g: 75.43, carbohydrate_g: 0.06, protein_g: 0.85 }])
           return new Response(emptyRes, {
             status: 200,
             headers: {
