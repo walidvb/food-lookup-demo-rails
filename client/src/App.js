@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import SelectedFoods from './SelectedFoods';
 import FoodSearch from './FoodSearch';
+import FoodForm from './FoodForm';
 
 class App extends Component {
   state = {
@@ -29,6 +30,7 @@ class App extends Component {
             foods={selectedFoods}
             onFoodClick={this.removeFoodItem}
           />
+          <FoodForm />
           <FoodSearch
             onFoodClick={this.addFood}
           />
