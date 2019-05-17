@@ -23,7 +23,9 @@ export default class FoodForm extends React.Component {
       <div>
         <input type="text" onChange={this.handleOnChange} value={this.state.food.description}></input>
         <input type="button" value="Submit" onClick={this.handleSubmit}/>
-        {this.state.sent.map((f,i) => <div key={i}><em>sent:</em> {f.description}</div>)}
+        {this.state.sent.map((f,i) => 
+          <div key={i}><em>sent:</em> {f.description}:{f.status}</div>
+        )}
       </div>
     )
   }
