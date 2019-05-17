@@ -1,11 +1,13 @@
-navigator.serviceWorker.ready.then(function(registration){
-  console.log('BS: Service Worker Ready')
-  return registration.sync.register('sendFormData')
-})
-  .then(function () {
-    console.log('sync event registered')
-  }).catch(function () {
-    // system was unable to register for a sync,
-    // this could be an OS-level restriction
-    console.log('sync registration failed')
+import axios from 'axios'
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').then(function (registration) {
+      // Registration was successful
+      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+    }, function (err) {
+      // registration failed :(
+      console.log('ServiceWorker registration failed: ', err);
+    });
   });
+}

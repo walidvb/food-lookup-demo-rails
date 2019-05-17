@@ -29,6 +29,10 @@ self.addEventListener('fetch', function(event){
     return
   }
 
+  if(/_sw\/sync$/.test(event.request.url)){
+    handleSync(event);
+    return;
+  }
   event.respondWith(
     caches
     .match(event.request)
@@ -87,12 +91,37 @@ self.addEventListener('fetch', function(event){
         })
     )
   };
-})
+});
 
-self.addEventListener('sync', function(event){
-  console.log('now online', event);
-})
-
+function handleSync(event){
+  sendLocalPostRequests();
+  event.respondWith(
+    new Response(JSON.stringify({ success: 1 }))
+  );
+}
+function sendLocalPostRequests(){
+  console.log('sendLocalPostRequests')
+  DB.get(function(requests){
+    requests.forEach(sendRequest);
+    function sendRequest(elem){
+      console.log('Retrying', elem)
+      fetch(elem.url, {
+        body: JSON.stringify(elem.payload),
+        method: elem.method,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      })
+        .then(function(){
+          DB.delete(elem.id)
+        })
+        .catch(function(){
+          console.log("Still couldn't POST", elem);
+        });
+    }
+  })
+};
 
 // =========================== DB
 
@@ -116,20 +145,19 @@ function Database(){
   var dbName = 'GRI';
   var storeName = 'post_requests';
   function openDatabase() {
-    // if `flask-form` does not already exist in our browser (under our site), it is created
     var indexedDBOpenRequest = indexedDB.open(dbName, 1)
     indexedDBOpenRequest.onerror = function (error) {
-      // error creating db
       console.error('IndexedDB error:', error)
+      // handle db error!!
     }
     indexedDBOpenRequest.onupgradeneeded = function () {
       this.result.createObjectStore(storeName, {
         autoIncrement: true, keyPath: 'id'
-      })
+      });
     }
-    // This will execute each time the database is opened.
     indexedDBOpenRequest.onsuccess = function () {
-      db = this.result
+      db = this.result;
+      sendLocalPostRequests();
     }
   }
 
@@ -139,6 +167,20 @@ function Database(){
 
   openDatabase();
   return {
+    get(callback){
+      var dbRequest = getObjectStore(storeName, 'readwrite').openCursor();
+      var rows = []
+      dbRequest.onsuccess = function(event){
+        var cursor = event.target.result;
+        if(cursor){
+          rows.push(cursor.value)
+          cursor.continue();
+        }
+        else{
+          callback(rows);
+        }
+      }
+    },
     add(row){
       var dbRequest = getObjectStore(storeName, 'readwrite').add(row)
       dbRequest.onsuccess = function(event){
@@ -147,6 +189,9 @@ function Database(){
       dbRequest.onerror = function (event) {
         console.log('error saving to indexed')
       }
+    },
+    delete(id){
+      getObjectStore(storeName, 'readwrite').delete(id);
     }
   }
 }
