@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+require('./backgroundSync.js');
 import App from './App';
 import './index.css';
 import '../semantic/dist/semantic.min.css';

@@ -89,6 +89,10 @@ self.addEventListener('fetch', function(event){
   };
 })
 
+self.addEventListener('sync', function(event){
+  console.log('now online', event);
+})
+
 
 // =========================== DB
 
