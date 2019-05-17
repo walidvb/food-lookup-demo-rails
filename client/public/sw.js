@@ -19,7 +19,12 @@ self.addEventListener('install', function(event){
 });
 
 self.addEventListener('fetch', function(event){
-  if(event.request.method !== 'GET'){
+  const byPassSWUrls = /sockjs/
+  if(event.request.method === 'POST'){
+    handlePOSTRequest(event);
+    return
+  }
+  if(event.request.method !== 'GET' || byPassSWUrls.test(event.request.url)){
     return
   }
 
@@ -32,9 +37,8 @@ self.addEventListener('fetch', function(event){
         .catch(unableToResolve);
 
         return cached || networked;
+
         function fetchedFromNetwork(response){
-          // don't cache other resource than the ones in static
-          return;
           var cacheCopy = response.clone();
           console.log('WORKER: fetch response', event.request.url);
 
@@ -58,7 +62,26 @@ self.addEventListener('fetch', function(event){
           })
         }
     })
+  );
 
+  function handlePOSTRequest(event) {
+    console.log("Handling POST", event.request.url);
 
-  )
+    event.respondWith(
+      fetch(event.request.clone())
+        .then(function(res){
+          console.log('successful POST');
+          return res;})
+        .catch(function (error) {
+          console.log("Error POSTing: ", error);
+          var resBody = JSON.stringify({ description: 'unsynced'})
+          return new Response(resBody, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+        })
+    )
+  };
 })

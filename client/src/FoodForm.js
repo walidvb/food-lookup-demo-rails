@@ -9,17 +9,19 @@ export default class FoodForm extends React.Component {
     const { food } = this.state
     console.log('POSTing', food)
     axios.post(url, { food })
-      .then(() => {
+      .then(({ data }) => {
+        console.log(data)
         this.setState({
           food: { description: ''},
-          sent: [food, ...this.state.sent],
+          sent: [data, ...this.state.sent],
         })
-      });
+      })
+      .catch(console.log);
   }
   render = () => {
     return (
       <div>
-        <input type="text" onChange={this.handleOnChange} value={this.state.description}></input>
+        <input type="text" onChange={this.handleOnChange} value={this.state.food.description}></input>
         <input type="button" value="Submit" onClick={this.handleSubmit}/>
         {this.state.sent.map((f,i) => <div key={i}><em>sent:</em> {f.description}</div>)}
       </div>
