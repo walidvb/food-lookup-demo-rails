@@ -14,12 +14,12 @@ class FoodsController < ApplicationController
     if q.blank?
       render(
         status: 200,
-        json: Food.all.limit(100)
+        json: Food.all.limit(100).order('created_at DESC')
       )
     else
       render(
         status: 200,
-        json: Food.where(["description LIKE ?", "%#{q}%"]).limit(100)
+        json: Food.where(["description LIKE ?", "%#{q}%"]).limit(100).order('created_at DESC')
       )
     end
   end
