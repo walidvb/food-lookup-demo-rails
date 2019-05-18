@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import SelectedFoods from './SelectedFoods';
 import FoodSearch from './FoodSearch';
 import FoodForm from './FoodForm';
+import UnsyncedRequests from './UnsyncedRequests';
 
 class App extends Component {
   state = {
@@ -26,11 +27,12 @@ class App extends Component {
     return (
       <div className='App'>
         <div className='ui text container'>
-          <SelectedFoods
+          {/* <SelectedFoods
             foods={selectedFoods}
             onFoodClick={this.removeFoodItem}
-          />
+          /> */}
           <FoodForm />
+          <UnsyncedRequests />
           <FoodSearch
             onFoodClick={this.addFood}
           />

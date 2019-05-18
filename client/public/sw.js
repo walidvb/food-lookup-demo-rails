@@ -19,6 +19,13 @@ self.addEventListener('install', function(event){
   )
 });
 
+self.addEventListener('activate', (event) => {
+  console.info('Event: Activate');
+  event.waitUntil(
+    self.clients.claim(),
+  );
+});
+
 self.addEventListener('fetch', function(event){
   const byPassSWUrls = /sockjs/
   if(event.request.method === 'POST'){
@@ -33,6 +40,23 @@ self.addEventListener('fetch', function(event){
     handleSync(event);
     return;
   }
+
+  if(/_sw\/get$/.test(event.request.url)) {
+    event.respondWith( new Promise(function(resolve){
+      return DB.get()
+      .then(function (res) {
+        console.log(res)
+        var response = new Response(JSON.stringify(res), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        resolve(response);
+      });
+    }));
+    return;
+  }
   event.respondWith(
     caches
     .match(event.request)
@@ -45,7 +69,6 @@ self.addEventListener('fetch', function(event){
 
         function fetchedFromNetwork(response){
           var cacheCopy = response.clone();
-          console.log('WORKER: fetch response', event.request.url);
 
           caches
             .open(version+'pages')
@@ -53,7 +76,6 @@ self.addEventListener('fetch', function(event){
               cache.put(event.request, cacheCopy)
             })
             .then(function(){
-              console.log('WORKER: fetch stored in cache', event.request.url);
             })
         }
 
@@ -101,26 +123,27 @@ function handleSync(event){
 }
 function sendLocalPostRequests(){
   console.log('sendLocalPostRequests')
-  DB.get(function(requests){
-    requests.forEach(sendRequest);
-    function sendRequest(elem){
-      console.log('Retrying', elem)
-      fetch(elem.url, {
-        body: JSON.stringify(elem.payload),
-        method: elem.method,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      })
-        .then(function(){
-          DB.delete(elem.id)
+  DB.get()
+    .then(function(requests){
+      requests.forEach(sendRequest);
+      function sendRequest(elem){
+        fetch(elem.url, {
+          body: JSON.stringify(elem.payload),
+          method: elem.method,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
         })
-        .catch(function(){
-          console.log("Still couldn't POST", elem);
-        });
-    }
-  })
+          .then(function(){
+            console.log('Sent', elem)
+            DB.delete(elem.id)
+          })
+          .catch(function(){
+            console.log("Still couldn't POST", elem);
+          });
+      }
+    })
 };
 
 // =========================== DB
@@ -167,19 +190,23 @@ function Database(){
 
   openDatabase();
   return {
-    get(callback){
+    get(){
       var dbRequest = getObjectStore(storeName, 'readwrite').openCursor();
-      var rows = []
-      dbRequest.onsuccess = function(event){
-        var cursor = event.target.result;
-        if(cursor){
-          rows.push(cursor.value)
-          cursor.continue();
+      return new Promise(function(resolve, reject){
+        dbRequest.onsuccess = function(event){
+          var rows = []
+          var cursor = event.target.result;
+          if(cursor){
+            rows.push(cursor.value)
+            cursor.continue();
+          }
+          else{
+            resolve(rows);
+          }
         }
-        else{
-          callback(rows);
-        }
-      }
+
+        db.onerror = reject
+      })
     },
     add(row){
       var dbRequest = getObjectStore(storeName, 'readwrite').add(row)
