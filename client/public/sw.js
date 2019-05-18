@@ -2,7 +2,7 @@ var version = "v2::";
 var DB = new Database();
 
 // URLs that should not be cached
-const byPassSWUrls = /sockjs|bundle\.js|hot-update\.json/;
+const byPassSWUrls = /sockjs|bundl\.js|hot-update\.json/;
 
 self.addEventListener('install', function(event){
   console.log('WORKER: install event in progress.');
@@ -47,7 +47,6 @@ self.addEventListener('fetch', function(event){
     event.respondWith( new Promise(function(resolve){
       return DB.get()
       .then(function (res) {
-        console.log(res)
         var response = new Response(JSON.stringify(res), {
           status: 200,
           headers: {
@@ -95,7 +94,6 @@ self.addEventListener('fetch', function(event){
 
   function handlePOSTRequest(event) {
     console.log("Handling POST", event.request.url);
-
     event.respondWith(
       fetch(event.request.clone())
         .then(function(res){
@@ -129,6 +127,13 @@ function sendLocalPostRequests(){
     .then(function(requests){
       requests.forEach(sendRequest);
       function sendRequest(elem){
+        self.clients.matchAll().then(function (clients) {
+          clients.forEach(function (client) {
+            client.postMessage({
+              msg: elem.idbKey,
+            })
+          })
+        })
         fetch(elem.url, {
           body: JSON.stringify(elem.payload),
           method: elem.method,
@@ -199,7 +204,7 @@ function Database(){
         dbRequest.onsuccess = function(event){
           var cursor = event.target.result;
           if(cursor){
-            rows.push(cursor.value)
+            rows.push({ idbKey: cursor.key, ...cursor.value })
             cursor.continue();
           }
           else{
