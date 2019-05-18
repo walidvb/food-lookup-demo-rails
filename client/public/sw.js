@@ -1,5 +1,8 @@
-var version = "v1::";
+var version = "v2::";
 var DB = new Database();
+
+// URLs that should not be cached
+const byPassSWUrls = /sockjs|bundle\.js|hot-update\.json/;
 
 self.addEventListener('install', function(event){
   console.log('WORKER: install event in progress.');
@@ -27,7 +30,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', function(event){
-  const byPassSWUrls = /sockjs/
   if(event.request.method === 'POST'){
     handlePOSTRequest(event);
     return
@@ -193,14 +195,15 @@ function Database(){
     get(){
       var dbRequest = getObjectStore(storeName, 'readwrite').openCursor();
       return new Promise(function(resolve, reject){
+        var rows = []
         dbRequest.onsuccess = function(event){
-          var rows = []
           var cursor = event.target.result;
           if(cursor){
             rows.push(cursor.value)
             cursor.continue();
           }
           else{
+            
             resolve(rows);
           }
         }
